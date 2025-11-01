@@ -57,7 +57,7 @@ class Program
         logger.LogInformation("=================================================");
         logger.LogInformation("FLAC Capture Service - Container Mode");
         logger.LogInformation("=================================================");
-        logger.LogInformation($"Version: 1.0.1");
+        logger.LogInformation($"Version: 1.0.3");
         logger.LogInformation($"Input Directory: {inputDir}");
         logger.LogInformation($"Output Directory: {outputDir}");
         logger.LogInformation($"Scan Interval: {scanInterval} seconds");

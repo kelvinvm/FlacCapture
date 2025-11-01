@@ -52,6 +52,7 @@ Complete documentation for the FLAC Capture utility.
 - [Linux Mode Explained](LINUX_MODE_EXPLAINED.md) - Direct stream capture for Synology/Linux
 - [Internal FLAC Update](INTERNAL_FLAC_UPDATE.md) - Encoding implementation
 - [File Locking Fix](FILE_LOCKING_FIX.md) - File handling details
+- [Scanner Pause Behavior](SCANNER_PAUSE_BEHAVIOR.md) - How scanning pauses during processing
 - [Containerization Summary](CONTAINERIZATION_SUMMARY.md) - Architecture
 
 ### Troubleshooting

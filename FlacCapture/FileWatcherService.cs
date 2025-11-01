@@ -24,6 +24,7 @@ public class FileWatcherService : IDisposable
     private readonly bool _autoConvertFlac;
     private readonly int _flacQuality;
     private readonly SemaphoreSlim _processingLock;
+    private bool _isCurrentlyProcessing;
 
     public FileWatcherService(
         string inputDir,
@@ -44,6 +45,7 @@ public class FileWatcherService : IDisposable
         _processedFiles = new HashSet<string>();
         _processingFiles = new HashSet<string>();
         _processingLock = new SemaphoreSlim(1, 1); // Process one file at a time
+        _isCurrentlyProcessing = false;
 
         // Create directories if they don't exist
         Directory.CreateDirectory(_inputDir);
@@ -95,6 +97,13 @@ public class FileWatcherService : IDisposable
     /// </summary>
     public async Task ScanExistingFilesAsync()
     {
+        // Skip scanning if currently processing a file
+        if (_isCurrentlyProcessing)
+        {
+            _logger.LogInformation("Skipping scan - file processing in progress");
+            return;
+        }
+
         _logger.LogInformation("Scanning for existing M3U files...");
 
         try
@@ -135,6 +144,7 @@ public class FileWatcherService : IDisposable
             }
 
             _processingFiles.Add(m3uFilePath);
+            _isCurrentlyProcessing = true; // Signal that processing is active
         }
         finally
         {
@@ -237,6 +247,7 @@ public class FileWatcherService : IDisposable
         finally
         {
             _processingFiles.Remove(m3uFilePath);
+            _isCurrentlyProcessing = false; // Signal that processing is complete
 
             // Move M3U file to appropriate subdirectory to prevent reprocessing
             try
@@ -288,32 +299,33 @@ public class FileWatcherService : IDisposable
     {
         _logger.LogInformation("FileWatcher service started");
         _logger.LogInformation($"Scan interval: {scanIntervalSeconds} seconds");
-        _logger.LogInformation($"Playback volume: {(_playbackVolume * 100):F0}%");
+        _logger.LogInformation($"Note: Periodic scanning pauses during active file processing");
+  _logger.LogInformation($"Playback volume: {(_playbackVolume * 100):F0}%");
         _logger.LogInformation($"Auto-convert FLAC: {_autoConvertFlac}");
-        _logger.LogInformation($"Auto-delete WAV: {_autoDeleteWav}");
+   _logger.LogInformation($"Auto-delete WAV: {_autoDeleteWav}");
 
         // Initial scan
-        await ScanExistingFilesAsync();
+   await ScanExistingFilesAsync();
 
-        // Periodic scan (in addition to file system watcher)
+  // Periodic scan (in addition to file system watcher)
         while (!cancellationToken.IsCancellationRequested)
-        {
+ {
             try
-            {
-                await Task.Delay(TimeSpan.FromSeconds(scanIntervalSeconds), cancellationToken);
-                await ScanExistingFilesAsync();
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in periodic scan");
-            }
+       {
+   await Task.Delay(TimeSpan.FromSeconds(scanIntervalSeconds), cancellationToken);
+  await ScanExistingFilesAsync();
+       }
+ catch (TaskCanceledException)
+      {
+       break;
+     }
+  catch (Exception ex)
+     {
+   _logger.LogError(ex, "Error in periodic scan");
+ }
         }
 
-        _logger.LogInformation("FileWatcher service stopped");
+    _logger.LogInformation("FileWatcher service stopped");
     }
 
     public void Dispose()
