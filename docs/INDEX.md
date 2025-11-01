@@ -39,6 +39,7 @@ Complete documentation for the FLAC Capture utility.
 ### Usage
 - [User Manual](README.md) - All features explained
 - [Usage Examples](EXAMPLES.md) - Practical scenarios
+- [M3U Processing Lifecycle](M3U_PROCESSING_LIFECYCLE.md) - How files are handled
 - [Container Quick Start](CONTAINER_QUICKSTART.md) - Service mode usage
 
 ### Configuration
@@ -48,6 +49,7 @@ Complete documentation for the FLAC Capture utility.
 
 ### Technical Deep Dives
 - [Audio Levels Explained](AUDIO_LEVELS_EXPLAINED.md) - Audio capture theory
+- [Linux Mode Explained](LINUX_MODE_EXPLAINED.md) - Direct stream capture for Synology/Linux
 - [Internal FLAC Update](INTERNAL_FLAC_UPDATE.md) - Encoding implementation
 - [File Locking Fix](FILE_LOCKING_FIX.md) - File handling details
 - [Containerization Summary](CONTAINERIZATION_SUMMARY.md) - Architecture
@@ -82,8 +84,17 @@ Complete documentation for the FLAC Capture utility.
 ### "I want to see usage examples"
 ? Browse [Usage Examples](EXAMPLES.md)
 
+### "How are M3U files handled after processing?"
+? Read [M3U Processing Lifecycle](M3U_PROCESSING_LIFECYCLE.md)
+
+### "Why is my file not being reprocessed?"
+? Check [M3U Processing Lifecycle](M3U_PROCESSING_LIFECYCLE.md) - Files moved to processed/failed folders
+
 ### "I need to troubleshoot Docker issues"
 ? See [Container Quick Start](CONTAINER_QUICKSTART.md) or [Docker Deployment](DOCKER_DEPLOYMENT.md)
+
+### "I'm getting WASAPI errors on Linux"
+? Read [Linux Mode Explained](LINUX_MODE_EXPLAINED.md) - Rebuild container for fix
 
 ## ?? Document Summaries
 

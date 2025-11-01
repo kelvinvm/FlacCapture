@@ -141,153 +141,184 @@ _ = ProcessFileAsync(e.FullPath);
             _processingLock.Release();
         }
 
+    bool processingSucceeded = false;
+
         try
-        {
-      // Wait a bit to ensure file is fully written
-     await Task.Delay(2000);
+ {
+            // Wait a bit to ensure file is fully written
+            await Task.Delay(2000);
 
-        if (!File.Exists(m3uFilePath))
-            {
-             _logger.LogWarning($"File no longer exists: {m3uFilePath}");
-                return;
-   }
+            if (!File.Exists(m3uFilePath))
+   {
+       _logger.LogWarning($"File no longer exists: {m3uFilePath}");
+ return;
+            }
 
-   _logger.LogInformation($"Processing: {Path.GetFileName(m3uFilePath)}");
+        _logger.LogInformation($"Processing: {Path.GetFileName(m3uFilePath)}");
 
             // Read M3U file
-     string[] urls;
-            try
-     {
-                urls = await File.ReadAllLinesAsync(m3uFilePath);
-        urls = urls.Where(url => !string.IsNullOrWhiteSpace(url) && !url.StartsWith("#")).ToArray();
+  string[] urls;
+ try
+            {
+          urls = await File.ReadAllLinesAsync(m3uFilePath);
+           urls = urls.Where(url => !string.IsNullOrWhiteSpace(url) && !url.StartsWith("#")).ToArray();
             }
             catch (Exception ex)
-     {
-          _logger.LogError(ex, $"Failed to read M3U file: {m3uFilePath}");
-    return;
-   }
-
-      if (urls.Length == 0)
-    {
-      _logger.LogWarning($"No valid URLs found in: {Path.GetFileName(m3uFilePath)}");
-      _processedFiles.Add(m3uFilePath);
-  return;
-     }
-
-     _logger.LogInformation($"Found {urls.Length} stream URL(s)");
-
-     // Generate output filename
- string baseName = Path.GetFileNameWithoutExtension(m3uFilePath);
- string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-      string outputWav = Path.Combine(_outputDir, $"{baseName}_{timestamp}.wav");
- string outputFlac = Path.ChangeExtension(outputWav, ".flac");
-
-  // Capture the streams
-     using (var captureService = new WasapiFlacCapture(_playbackVolume))
             {
-            try
-      {
-           _logger.LogInformation($"Starting capture for: {baseName}");
- await captureService.CaptureStreamToFile(urls, outputWav, _autoConvertFlac);
-       _logger.LogInformation($"Capture completed: {Path.GetFileName(outputWav)}");
+    _logger.LogError(ex, $"Failed to read M3U file: {m3uFilePath}");
+       return;
+        }
 
-   // Convert to FLAC if not already done and requested
-      if (!_autoConvertFlac && File.Exists(outputWav))
-  {
+            if (urls.Length == 0)
+            {
+        _logger.LogWarning($"No valid URLs found in: {Path.GetFileName(m3uFilePath)}");
+         _processedFiles.Add(m3uFilePath);
+             processingSucceeded = false;
+        return;
+            }
+
+        _logger.LogInformation($"Found {urls.Length} stream URL(s)");
+
+   // Generate output filename
+        string baseName = Path.GetFileNameWithoutExtension(m3uFilePath);
+         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+     string outputWav = Path.Combine(_outputDir, $"{baseName}_{timestamp}.wav");
+         string outputFlac = Path.ChangeExtension(outputWav, ".flac");
+
+            // Capture the streams
+         using (var captureService = new DirectStreamCapture(_playbackVolume))
+            {
+     try
+   {
+      _logger.LogInformation($"Starting capture for: {baseName}");
+          await captureService.CaptureStreamToFile(urls, outputWav, _autoConvertFlac);
+      _logger.LogInformation($"Capture completed: {Path.GetFileName(outputWav)}");
+
+        // Convert to FLAC if not already done and requested
+     if (!_autoConvertFlac && File.Exists(outputWav))
+ {
           _logger.LogInformation("Converting to FLAC...");
-                 bool success = FlacConverter.ConvertToFlac(outputWav, outputFlac, _flacQuality);
+     bool success = FlacConverter.ConvertToFlac(outputWav, outputFlac, _flacQuality);
 
          if (success)
-            {
-        _logger.LogInformation($"FLAC conversion successful: {Path.GetFileName(outputFlac)}");
+         {
+       _logger.LogInformation($"FLAC conversion successful: {Path.GetFileName(outputFlac)}");
 
-     if (_autoDeleteWav)
-        {
-             try
-      {
-         File.Delete(outputWav);
-  _logger.LogInformation("WAV file deleted (auto-cleanup)");
-        }
-                    catch (Exception ex)
-     {
-         _logger.LogWarning(ex, "Could not delete WAV file");
-        }
-    }
-    }
-                   else
-      {
-  _logger.LogWarning("FLAC conversion failed, keeping WAV file");
-    }
-  }
-
-   // Mark as processed
-      _processedFiles.Add(m3uFilePath);
-
-        // Optionally move or delete the processed M3U file
+        if (_autoDeleteWav)
+       {
       try
-  {
-       string processedDir = Path.Combine(_inputDir, "processed");
-     Directory.CreateDirectory(processedDir);
-       string processedPath = Path.Combine(processedDir, Path.GetFileName(m3uFilePath));
-
-       File.Move(m3uFilePath, processedPath, true);
-         _logger.LogInformation($"M3U file moved to: processed/{Path.GetFileName(m3uFilePath)}");
-     }
-         catch (Exception ex)
-    {
-      _logger.LogWarning(ex, "Could not move M3U file to processed folder");
-   }
-     }
-                catch (Exception ex)
-                {
-  _logger.LogError(ex, $"Failed to process: {m3uFilePath}");
-                }
-   }
-   }
-        finally
         {
-            _processingFiles.Remove(m3uFilePath);
+            File.Delete(outputWav);
+             _logger.LogInformation("WAV file deleted (auto-cleanup)");
+        }
+         catch (Exception ex)
+           {
+           _logger.LogWarning(ex, "Could not delete WAV file");
+       }
+       }
+ }
+      else
+              {
+     _logger.LogWarning("FLAC conversion failed, keeping WAV file");
+       }
+   }
+
+     // Mark as successfully processed
+         processingSucceeded = true;
+    _processedFiles.Add(m3uFilePath);
+          }
+     catch (Exception ex)
+    {
+    _logger.LogError(ex, $"Failed to capture streams from: {m3uFilePath}");
+           processingSucceeded = false;
+  }
+  }
+     }
+     finally
+     {
+     _processingFiles.Remove(m3uFilePath);
+
+      // Move M3U file to appropriate subdirectory to prevent reprocessing
+            try
+            {
+           string fileName = Path.GetFileName(m3uFilePath);
+       string targetSubdir = processingSucceeded ? "processed" : "failed";
+        string targetDir = Path.Combine(_inputDir, targetSubdir);
+
+         // Create subdirectory if it doesn't exist
+        Directory.CreateDirectory(targetDir);
+
+        string targetPath = Path.Combine(targetDir, fileName);
+
+      // Handle duplicate filenames by adding timestamp
+              if (File.Exists(targetPath))
+                {
+                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+         string extension = Path.GetExtension(fileName);
+     string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+    fileName = $"{fileNameWithoutExt}_{timestamp}{extension}";
+       targetPath = Path.Combine(targetDir, fileName);
+          }
+
+          File.Move(m3uFilePath, targetPath, true);
+
+     if (processingSucceeded)
+  {
+         _logger.LogInformation($"M3U file moved to: {targetSubdir}/{fileName}");
+              }
+         else
+        {
+  _logger.LogWarning($"M3U file moved to: {targetSubdir}/{fileName} (processing failed)");
+                }
+    }
+            catch (Exception ex)
+  {
+             _logger.LogWarning(ex, $"Could not move M3U file to {(processingSucceeded ? "processed" : "failed")} folder");
+
+      // Even if move fails, mark as processed to prevent infinite retry loops
+    _processedFiles.Add(m3uFilePath);
+       }
         }
     }
 
     /// <summary>
     /// Starts the service (for manual polling mode)
     /// </summary>
- public async Task RunAsync(CancellationToken cancellationToken, int scanIntervalSeconds = 30)
+    public async Task RunAsync(CancellationToken cancellationToken, int scanIntervalSeconds = 30)
     {
-      _logger.LogInformation("FileWatcher service started");
-     _logger.LogInformation($"Scan interval: {scanIntervalSeconds} seconds");
+        _logger.LogInformation("FileWatcher service started");
+        _logger.LogInformation($"Scan interval: {scanIntervalSeconds} seconds");
         _logger.LogInformation($"Playback volume: {(_playbackVolume * 100):F0}%");
-        _logger.LogInformation($"Auto-convert FLAC: {_autoConvertFlac}");
+      _logger.LogInformation($"Auto-convert FLAC: {_autoConvertFlac}");
         _logger.LogInformation($"Auto-delete WAV: {_autoDeleteWav}");
 
         // Initial scan
         await ScanExistingFilesAsync();
 
         // Periodic scan (in addition to file system watcher)
-      while (!cancellationToken.IsCancellationRequested)
-        {
-      try
-   {
-              await Task.Delay(TimeSpan.FromSeconds(scanIntervalSeconds), cancellationToken);
-                await ScanExistingFilesAsync();
-      }
-            catch (TaskCanceledException)
+while (!cancellationToken.IsCancellationRequested)
       {
-    break;
-      }
-         catch (Exception ex)
+    try
             {
-                _logger.LogError(ex, "Error in periodic scan");
-}
+ await Task.Delay(TimeSpan.FromSeconds(scanIntervalSeconds), cancellationToken);
+     await ScanExistingFilesAsync();
+            }
+            catch (TaskCanceledException)
+          {
+  break;
+        }
+          catch (Exception ex)
+      {
+      _logger.LogError(ex, "Error in periodic scan");
       }
+        }
 
-  _logger.LogInformation("FileWatcher service stopped");
+     _logger.LogInformation("FileWatcher service stopped");
     }
 
     public void Dispose()
     {
-        _watcher?.Dispose();
+      _watcher?.Dispose();
         _processingLock?.Dispose();
     }
 }

@@ -388,7 +388,15 @@ http://stream.example.com/segment3.mp3
 
 ## Updating the Application
 
-### Method 1: Rebuild via Portainer
+### Overview of Update Process
+
+FlacCapture updates fall into two categories:
+1. **Configuration changes** - Environment variables, volume paths (no rebuild needed)
+2. **Code changes** - Application updates, bug fixes (rebuild required)
+
+### Method 1: Rebuild via Portainer (Stack-based Deployment)
+
+**Best for:** Updates when using Git repository or uploaded compose file with build context
 
 1. **Go to Stacks** ? Select **flaccapture**
 2. Click **Editor** to modify if needed
@@ -396,58 +404,355 @@ http://stream.example.com/segment3.mp3
 4. Enable **Re-pull image and redeploy**
 5. Click **Update**
 
-### Method 2: Pull and Restart
+**Note:** This only works if you deployed using Git repository method. For uploaded stacks, see Method 3.
 
-1. **Update source files** on Synology (if changed)
-2. **Go to Stacks** ? **flaccapture**
-3. Click **Stop** ? **Start**
-4. Or click **Restart**
+### Method 2: Update Configuration Only (No Rebuild)
 
-### Method 3: Rebuild Image
+**Best for:** Changing environment variables, adjusting settings
 
-**Via Portainer Console:**
-1. **Containers** ? **flaccapture** ? **Console**
-2. Connect using `/bin/bash`
-3. Or use SSH:
-   ```bash
-   ssh admin@your-nas-ip
-   cd /volume1/docker/FlacCapture
-   sudo docker-compose down
-   sudo docker-compose build --no-cache
-   sudo docker-compose up -d
+**Via Portainer UI:**
+1. **Containers** ? **flaccapture** ? **Duplicate/Edit**
+2. Scroll to **Env** section
+3. Modify environment variables
+4. Click **Deploy the container**
+
+**Via Stack Editor:**
+1. **Stacks** ? **flaccapture** ? **Editor**
+2. Modify environment variables in YAML
+3. Click **Update the stack**
+4. Container will restart with new settings
+
+### Method 3: Update After Code Changes (Recommended)
+
+**When you need to rebuild after source code changes:**
+
+#### Step-by-Step Process:
+
+**1. Update source code on Synology:**
+
+```bash
+# SSH into your Synology
+ssh admin@your-nas-ip
+cd /volume1/docker/FlacCapture
+
+# Option A: Pull from Git (if using version control)
+git pull origin main
+
+# Option B: Upload new files via SCP
+# From your local machine:
+scp -r FlacCapture/ admin@your-nas-ip:/volume1/docker/
+```
+
+**2. Rebuild the Docker image:**
+
+```bash
+# Still in SSH session
+cd /volume1/docker/FlacCapture
+
+# Rebuild with no cache to ensure fresh build
+sudo docker build -t flaccapture:latest --no-cache .
+
+# Verify new image was created
+sudo docker images flaccapture
+```
+
+**3. Restart container via Portainer:**
+
+**Option A: Quick Restart (if using pre-built image)**
+1. **Containers** ? **flaccapture**
+2. Click **Recreate**
+3. Enable **Pull latest image**
+4. Click **Recreate**
+
+**Option B: Via Stack Update**
+1. **Stacks** ? **flaccapture**
+2. Click **Stop stack**
+3. Wait for container to stop
+4. Click **Start stack**
+
+**Option C: Manual Stop/Start**
+1. **Containers** ? **flaccapture** ? **Stop**
+2. Wait for container to stop completely
+3. Click **Start**
+
+### Method 4: Complete Rebuild (Nuclear Option)
+
+**When something is broken and you need a fresh start:**
+
+```bash
+# SSH into Synology
+ssh admin@your-nas-ip
+cd /volume1/docker/FlacCapture
+
+# Stop and remove everything
+sudo docker-compose down -v  # WARNING: -v removes volumes!
+
+# Or to keep data:
+sudo docker-compose down
+
+# Rebuild from scratch
+sudo docker-compose build --no-cache
+
+# Start services
+sudo docker-compose up -d
+```
+
+**In Portainer:**
+1. **Stacks** ? **flaccapture** ? **Stop stack**
+2. **Remove stack** (keeps volumes by default)
+3. Create new stack with same configuration
+4. Deploy
+
+### Updating Workflow Examples
+
+#### Example 1: Bug Fix Release
+
+**Scenario:** New version fixes a FLAC encoding issue
+
+```bash
+# 1. SSH into NAS
+ssh admin@your-nas-ip
+cd /volume1/docker/FlacCapture
+
+# 2. Get latest code
+git pull origin main
+# Or: git fetch && git checkout v1.1.0
+
+# 3. Rebuild image
+sudo docker build -t flaccapture:latest --no-cache .
+
+# 4. Exit SSH, go to Portainer
+# Containers ? flaccapture ? Recreate
+```
+
+**Expected downtime:** 2-3 minutes
+
+#### Example 2: Adding New Feature
+
+**Scenario:** New feature requires environment variable
+
+```bash
+# 1. Update code (same as Example 1)
+git pull origin main
+
+# 2. Rebuild image
+sudo docker build -t flaccapture:latest --no-cache .
+```
+
+**In Portainer:**
+1. **Stacks** ? **flaccapture** ? **Editor**
+2. Add new environment variable:
+   ```yaml
+   environment:
+     - NEW_FEATURE_ENABLED=true
+   ```
+3. Click **Update the stack**
+
+#### Example 3: Hotfix Deployment
+
+**Scenario:** Critical bug needs immediate fix
+
+```bash
+# 1. Quick code update
+ssh admin@your-nas-ip
+cd /volume1/docker/FlacCapture
+git pull origin hotfix/critical-bug
+
+# 2. Fast rebuild
+sudo docker build -t flaccapture:latest .
+
+# 3. Force restart (fast path)
+sudo docker restart flaccapture
+```
+
+**Expected downtime:** 10-15 seconds
+
+#### Example 4: Scheduled Maintenance Update
+
+**Scenario:** Monthly update during off-hours
+
+```bash
+# 1. SSH and prepare
+ssh admin@your-nas-ip
+cd /volume1/docker/FlacCapture
+
+# 2. Backup current state
+sudo docker commit flaccapture flaccapture:backup-$(date +%Y%m%d)
+
+# 3. Update code
+git pull origin main
+
+# 4. Rebuild
+sudo docker build -t flaccapture:latest --no-cache .
+
+# 5. Stop old, start new
+sudo docker stop flaccapture
+sudo docker rm flaccapture
+sudo docker-compose up -d
+
+# 6. Verify in Portainer
+# Check logs for successful startup
+```
+
+### Version Control Integration
+
+**Tagging releases for easy rollback:**
+
+```bash
+# After successful deployment
+cd /volume1/docker/FlacCapture
+git tag -a v1.0.0 -m "Stable release 1.0.0"
+sudo docker tag flaccapture:latest flaccapture:v1.0.0
+
+# Later, rollback if needed:
+git checkout v1.0.0
+sudo docker build -t flaccapture:latest .
+sudo docker restart flaccapture
+```
+
+### Automatic Updates via Webhooks
+
+**Set up auto-rebuild on Git push:**
+
+**1. In Portainer:**
+1. **Containers** ? **flaccapture** ? **Duplicate/Edit**
+2. Scroll to **Webhook**
+3. Enable webhook
+4. Copy webhook URL
+
+**2. In GitHub:**
+1. Repository **Settings** ? **Webhooks**
+2. Add webhook
+3. Paste Portainer webhook URL
+4. Select trigger: **Just the push event**
+5. Save
+
+**3. Test:**
+```bash
+# Push code change
+git commit -m "Test auto-deploy"
+git push
+
+# Portainer automatically rebuilds and redeploys!
+```
+
+### Monitoring Updates
+
+**Check update status:**
+
+**In Portainer:**
+1. **Containers** ? **flaccapture** ? **Logs**
+2. Look for startup messages:
+   ```
+   [INFO] FLAC Capture Service - Container Mode
+   [INFO] Version: 1.1.0
    ```
 
-## Troubleshooting
-
-### Container Won't Start
-
-**Check in Portainer:**
-1. **Containers** ? **flaccapture** ? **Logs**
-2. Look for errors in startup messages
-
-**Common issues:**
-
-| Error | Solution |
-|-------|----------|
-| "Volume path not found" | Create missing folders in File Station |
-| "Permission denied" | Check folder permissions (755 or 777) |
-| "Port already in use" | N/A (this container doesn't expose ports) |
-| "Build failed" | Check Dockerfile and source code are uploaded |
-
-### No Files Being Processed
-
-**Verify file watcher:**
-1. Check logs for "FileWatcher service started"
-2. Verify M3U file is in `/volume1/audio/input`
-3. Confirm file extension is `.m3u` (lowercase)
-4. Check file permissions (should be readable)
-
-**Debug steps:**
+**Via SSH:**
 ```bash
-# Via Portainer Console or SSH
-sudo docker exec -it flaccapture /bin/bash
-ls -la /app/input
-cat /app/input/test.m3u
+# Check image creation date
+sudo docker images flaccapture
+
+# Check container uptime
+sudo docker ps | grep flaccapture
+
+# View recent logs
+sudo docker logs --tail 50 flaccapture
+```
+
+### Rollback Procedure
+
+**If update causes problems:**
+
+**Method 1: Revert to previous image**
+```bash
+ssh admin@your-nas-ip
+
+# List available images
+sudo docker images flaccapture
+
+# Use older image
+sudo docker stop flaccapture
+sudo docker run -d \
+  --name flaccapture \
+  --volumes-from flaccapture \
+  flaccapture:backup-20251101
+
+# Or restore from tag
+sudo docker tag flaccapture:v1.0.0 flaccapture:latest
+sudo docker restart flaccapture
+```
+
+**Method 2: Revert code via Git**
+```bash
+cd /volume1/docker/FlacCapture
+git log --oneline  # Find previous commit
+git checkout <commit-hash>
+sudo docker build -t flaccapture:latest .
+sudo docker restart flaccapture
+```
+
+### Update Checklist
+
+**Before updating:**
+- [ ] Read release notes
+- [ ] Backup current configuration (export stack from Portainer)
+- [ ] Note current version number
+- [ ] Check disk space (need ~500MB for new image)
+- [ ] Schedule during low-usage time
+- [ ] Notify users if applicable
+
+**During update:**
+- [ ] Stop container gracefully
+- [ ] Verify source code is updated
+- [ ] Rebuild Docker image
+- [ ] Check build for errors
+- [ ] Start container
+- [ ] Wait for full startup (30 seconds)
+
+**After update:**
+- [ ] Check logs for errors
+- [ ] Verify container is running
+- [ ] Test with sample M3U file
+- [ ] Monitor for 10-15 minutes
+- [ ] Document any issues
+- [ ] Update documentation if needed
+
+### Troubleshooting Updates
+
+**Build fails:**
+```bash
+# Clean Docker build cache
+sudo docker builder prune -a
+
+# Retry build
+sudo docker build -t flaccapture:latest --no-cache .
+```
+
+**Container won't start after update:**
+```bash
+# Check logs
+sudo docker logs flaccapture
+
+# Verify volumes still exist
+ls -la /volume1/audio/input
+ls -la /volume1/audio/output
+
+# Reset to known-good state
+sudo docker stop flaccapture
+sudo docker rm flaccapture
+sudo docker run -d \
+  --name flaccapture \
+  -v /volume1/audio/input:/app/input \
+  -v /volume1/audio/output:/app/output \
+  flaccapture:v1.0.0
+```
+
+**Configuration changes don't apply:**
+```bash
+# Force recreate container
+sudo docker-compose down
+sudo docker-compose up -d --force-recreate
 ```
 
 ### FLAC Conversion Fails
@@ -466,244 +771,46 @@ sudo docker exec flaccapture which flac
 
 **If missing, rebuild container** (unlikely, as Dockerfile includes it)
 
+### WASAPI Error on Linux (FIXED)
+
+**Error message:**
+```
+[ERROR] NotSupportedException: This functionality is only supported on Windows Vista or newer
+at NAudio.CoreAudioApi.MMDeviceEnumerator..ctor()
+```
+
+**Cause:** WASAPI is Windows-only, doesn't work on Synology/Linux
+
+**Solution:** The application now automatically uses **DirectStreamCapture** (Linux mode) instead:
+
+**1. Update to latest code:**
+```bash
+ssh admin@your-nas-ip
+cd /volume1/docker/FlacCapture
+git pull origin main
+```
+
+**2. Rebuild container:**
+```bash
+sudo docker build -t flaccapture:latest --no-cache .
+```
+
+**3. Restart in Portainer:**
+- Containers ? flaccapture ? Recreate
+
+**Verify fix in logs:**
+```
+Initializing direct stream capture (Linux mode)...
+[INFO] Downloading stream...
+[INFO] Downloaded successfully
+```
+
+**See also:** [Linux Mode Explained](LINUX_MODE_EXPLAINED.md) for full details
+
+**Benefits of Linux mode:**
+- ? 10-30x faster (downloads at full speed, not real-time)
+- ? Lower CPU/memory usage
+- ? Same audio quality (bit-perfect)
+- ? More reliable
+
 ### Can't Access Logs
-
-**If logs don't show in Portainer:**
-1. Check container is running
-2. Try **Console** tab instead
-3. Access via SSH:
-   ```bash
-   sudo docker logs flaccapture
-   sudo docker logs -f flaccapture  # Follow mode
- ```
-
-### Disk Space Issues
-
-**Monitor disk usage:**
-1. **Storage** ? **Storage Manager**
-2. Check `volume1` free space
-
-**Clean up:**
-1. Enable `AUTO_DELETE_WAV=true`
-2. Archive old FLAC files periodically
-3. Delete processed M3U files from `input/processed/`
-
-## Advanced Configuration
-
-### Custom Network
-
-**Create isolated network:**
-1. **Networks** ? **Add network**
-2. Name: `flaccapture_isolated`
-3. Driver: `bridge`
-
-**Update stack to use it:**
-```yaml
-networks:
-flaccapture_isolated:
-    external: true
-
-services:
-  flaccapture:
-networks:
-      - flaccapture_isolated
-```
-
-### Resource Limits
-
-**Add resource constraints:**
-1. **Containers** ? **flaccapture** ? **Duplicate/Edit**
-2. Scroll to **Resources and Limits**
-3. Set limits:
-- CPU: `2.0` (2 cores max)
-   - Memory: `2GB`
-
-**Or in docker-compose.yml:**
-```yaml
-services:
-  flaccapture:
-    deploy:
- resources:
-        limits:
-  cpus: '2.0'
-    memory: 2G
-        reservations:
-     cpus: '1.0'
-        memory: 512M
-```
-
-### Scheduled Tasks
-
-**For periodic cleanup or maintenance:**
-1. **Control Panel** ? **Task Scheduler**
-2. **Create** ? **Scheduled Task** ? **User-defined script**
-3. Example script:
-   ```bash
-   #!/bin/bash
-   # Clean up old FLAC files (older than 90 days)
-   find /volume1/audio/output -name "*.flac" -mtime +90 -delete
-   
-   # Clean up processed M3U files
-   find /volume1/audio/input/processed -name "*.m3u" -mtime +30 -delete
-   ```
-
-### Multiple Instances
-
-**To run multiple capture services:**
-1. Duplicate the stack
-2. Change:
-   - Stack name: `flaccapture-2`
-   - Container name: `flaccapture2`
-   - Volume paths: `/volume1/audio2/input`, etc.
-
-```yaml
-services:
-  flaccapture2:
-    container_name: flaccapture2
-    volumes:
-      - /volume1/audio2/input:/app/input
-      - /volume1/audio2/output:/app/output
-```
-
-## Portainer-Specific Features
-
-### Webhooks
-
-**Auto-redeploy on code changes:**
-1. **Containers** ? **flaccapture** ? **Duplicate/Edit**
-2. Scroll to **Webhook**
-3. Enable webhook
-4. Copy webhook URL
-5. Configure in your CI/CD or Git repository
-
-### Templates
-
-**Save as template for reuse:**
-1. **Settings** ? **App Templates**
-2. **Add template**
-3. Define template from your working stack
-4. Use for future deployments
-
-### Backup & Restore
-
-**Export stack configuration:**
-1. **Stacks** ? **flaccapture**
-2. Click **Editor**
-3. Copy YAML content
-4. Save externally
-
-**Import on new NAS:**
-1. Create new stack
-2. Paste YAML content
-3. Deploy
-
-## Security Best Practices
-
-### Access Control
-
-**Portainer authentication:**
-- Use strong admin password
-- Consider enabling 2FA (Portainer Business Edition)
-- Create separate users for different access levels
-
-**Network isolation:**
-- Use Synology firewall rules
-- Restrict Portainer access to local network
-- Consider VPN for remote access
-
-### Container Security
-
-**Read-only volumes:**
-```yaml
-volumes:
-  - /volume1/audio/output:/app/output:ro  # Read-only
-```
-
-**Drop capabilities:**
-```yaml
-cap_drop:
-  - ALL
-cap_add:
-  - NET_BIND_SERVICE
-```
-
-## Performance Optimization
-
-### Storage Performance
-
-**Use SSD for output:**
-- Move `/volume1/audio/output` to SSD volume if available
-- Keep input on HDD (lower I/O)
-
-**Enable caching:**
-```yaml
-volumes:
-  - /volume1/audio/output:/app/output:cached
-```
-
-### Network Optimization
-
-**Quality of Service (QoS):**
-1. **Network** ? **QoS**
-2. Add rule for Docker traffic
-3. Set appropriate priority
-
-## Comparison: Portainer vs Command Line
-
-| Feature | Portainer | Command Line |
-|---------|-----------|--------------|
-| **Ease of Use** | ????? Visual | ?? Requires SSH |
-| **Monitoring** | ????? Built-in graphs | ?? Manual commands |
-| **Log Viewing** | ???? Web interface | ??? Terminal output |
-| **Updates** | ???? Click to rebuild | ??? Run commands |
-| **Automation** | ???? Webhooks | ????? Scripts |
-| **Speed** | ??? Web overhead | ????? Direct |
-
-**Recommendation:** Portainer for most users, command line for advanced automation.
-
-## Next Steps
-
-After successful deployment:
-
-1. ? **Test with sample M3U** - Verify full workflow
-2. ? **Set up monitoring** - Check logs regularly
-3. ? **Configure backup** - Export stack configuration
-4. ? **Schedule maintenance** - Clean up old files
-5. ? **Document customizations** - Note any changes made
-
-## Support Resources
-
-- **Portainer Docs**: https://docs.portainer.io/
-- **FlacCapture Docs**: See `docs/` directory
-- **Synology Forums**: https://community.synology.com/
-- **Docker Docs**: https://docs.docker.com/
-
-## Frequently Asked Questions
-
-**Q: Can I use Portainer CE (free) or do I need Business?**
-A: Portainer CE is sufficient. Business adds advanced features but isn't required.
-
-**Q: Can I manage multiple NAS devices from one Portainer?**
-A: Yes! Add multiple "environments" in Portainer to manage different devices.
-
-**Q: How do I access Portainer remotely?**
-A: Use Synology QuickConnect, VPN, or expose via reverse proxy (advanced).
-
-**Q: Can I use Portainer on DSM 6.x?**
-A: Yes, but upgrade to DSM 7+ recommended for best compatibility.
-
-**Q: Does this work with other NAS brands?**
-A: Yes! Portainer works on any system running Docker (QNAP, Unraid, etc.)
-
-## Conclusion
-
-Portainer provides an excellent web-based interface for managing your FlacCapture container on Synology NAS. It's easier than command-line Docker for most users, while still providing full control and monitoring capabilities.
-
-**Happy capturing!** ??
-
----
-
-For more information:
-- [Docker Deployment (Command Line)](DOCKER_DEPLOYMENT.md)
-- [Container Quick Start](CONTAINER_QUICKSTART.md)
-- [Main Documentation](INDEX.md)
