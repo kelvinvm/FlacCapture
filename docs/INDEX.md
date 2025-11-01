@@ -5,14 +5,17 @@ Complete documentation for the FLAC Capture utility.
 ## ?? Getting Started
 
 ### For New Users
-1. **[Quick Start Guide](QUICKSTART.md)** - Get running in 5 minutes (Windows)
-2. **[User Manual](README.md)** - Complete feature documentation
-3. **[Usage Examples](EXAMPLES.md)** - Common scenarios and tips
+1. **[Deployment Comparison](DEPLOYMENT_COMPARISON.md)** - Choose the right method for you
+2. **[Quick Start Guide](QUICKSTART.md)** - Get running in 5 minutes (Windows)
+3. **[User Manual](README.md)** - Complete feature documentation
+4. **[Usage Examples](EXAMPLES.md)** - Common scenarios and tips
 
 ### For Docker/Container Users
-1. **[Container Quick Start](CONTAINER_QUICKSTART.md)** - Quick reference for Docker
-2. **[Docker Deployment Guide](DOCKER_DEPLOYMENT.md)** - Complete Synology NAS setup
-3. **[Containerization Summary](CONTAINERIZATION_SUMMARY.md)** - Architecture and design
+1. **[Deployment Comparison](DEPLOYMENT_COMPARISON.md)** - Portainer vs Docker Compose
+2. **[Container Quick Start](CONTAINER_QUICKSTART.md)** - Quick reference for Docker
+3. **[Docker Deployment Guide](DOCKER_DEPLOYMENT.md)** - Complete command-line setup
+4. **[Portainer Deployment Guide](PORTAINER_DEPLOYMENT.md)** - Web UI deployment for Synology NAS
+5. **[Containerization Summary](CONTAINERIZATION_SUMMARY.md)** - Architecture and design
 
 ## ?? Technical Documentation
 
@@ -29,7 +32,8 @@ Complete documentation for the FLAC Capture utility.
 
 ### Installation & Setup
 - [Quick Start Guide](QUICKSTART.md) - Windows installation
-- [Docker Deployment](DOCKER_DEPLOYMENT.md) - Container setup
+- [Docker Deployment](DOCKER_DEPLOYMENT.md) - Command-line setup
+- [Portainer Deployment](PORTAINER_DEPLOYMENT.md) - Web UI setup
 - [Container Quick Start](CONTAINER_QUICKSTART.md) - Docker commands
 
 ### Usage
@@ -39,6 +43,7 @@ Complete documentation for the FLAC Capture utility.
 
 ### Configuration
 - [Docker Deployment](DOCKER_DEPLOYMENT.md) - Environment variables
+- [Portainer Deployment](PORTAINER_DEPLOYMENT.md) - Web UI configuration
 - [Containerization Summary](CONTAINERIZATION_SUMMARY.md) - Configuration options
 
 ### Technical Deep Dives
@@ -58,7 +63,12 @@ Complete documentation for the FLAC Capture utility.
 ? Start with [Quick Start Guide](QUICKSTART.md)
 
 ### "I want to run this on my Synology NAS"
-? Start with [Docker Deployment Guide](DOCKER_DEPLOYMENT.md)
+? Choose one:
+- **Prefer web interface?** ? [Portainer Deployment Guide](PORTAINER_DEPLOYMENT.md)
+- **Prefer command line?** ? [Docker Deployment Guide](DOCKER_DEPLOYMENT.md)
+
+### "I use Portainer for container management"
+? Follow [Portainer Deployment Guide](PORTAINER_DEPLOYMENT.md)
 
 ### "I need to understand WASAPI capture"
 ? Read [Audio Levels Explained](AUDIO_LEVELS_EXPLAINED.md)
@@ -83,7 +93,8 @@ Complete documentation for the FLAC Capture utility.
 | [User Manual](README.md) | 8-10 | All features, configuration | All users |
 | [Examples](EXAMPLES.md) | 6-8 | Practical scenarios, tips | Intermediate |
 | [Container Quick Start](CONTAINER_QUICKSTART.md) | 3-4 | Docker commands, monitoring | Docker users |
-| [Docker Deployment](DOCKER_DEPLOYMENT.md) | 15-20 | Complete deployment guide | DevOps |
+| [Docker Deployment](DOCKER_DEPLOYMENT.md) | 15-20 | Complete CLI deployment | DevOps |
+| [Portainer Deployment](PORTAINER_DEPLOYMENT.md) | 12-15 | Web UI deployment | Synology users |
 | [Containerization](CONTAINERIZATION_SUMMARY.md) | 8-10 | Architecture, design | Technical |
 | [Audio Levels](AUDIO_LEVELS_EXPLAINED.md) | 10-12 | WASAPI theory, bit-perfect | Audio engineers |
 | [FLAC Update](INTERNAL_FLAC_UPDATE.md) | 6-8 | Encoding implementation | Developers |
@@ -93,11 +104,13 @@ Complete documentation for the FLAC Capture utility.
 
 - **WASAPI**: [Audio Levels Explained](AUDIO_LEVELS_EXPLAINED.md)
 - **Docker**: [Docker Deployment](DOCKER_DEPLOYMENT.md), [Container Quick Start](CONTAINER_QUICKSTART.md)
-- **Synology**: [Docker Deployment](DOCKER_DEPLOYMENT.md)
+- **Portainer**: [Portainer Deployment](PORTAINER_DEPLOYMENT.md)
+- **Synology**: [Docker Deployment](DOCKER_DEPLOYMENT.md), [Portainer Deployment](PORTAINER_DEPLOYMENT.md)
+- **Web UI**: [Portainer Deployment](PORTAINER_DEPLOYMENT.md)
 - **FLAC**: [Internal FLAC Update](INTERNAL_FLAC_UPDATE.md), [User Manual](README.md)
 - **M3U**: [Quick Start](QUICKSTART.md), [Examples](EXAMPLES.md)
-- **Troubleshooting**: [File Locking Fix](FILE_LOCKING_FIX.md), [Docker Deployment](DOCKER_DEPLOYMENT.md)
-- **Configuration**: [Docker Deployment](DOCKER_DEPLOYMENT.md), [Containerization](CONTAINERIZATION_SUMMARY.md)
+- **Troubleshooting**: [File Locking Fix](FILE_LOCKING_FIX.md), [Docker Deployment](DOCKER_DEPLOYMENT.md), [Portainer Deployment](PORTAINER_DEPLOYMENT.md)
+- **Configuration**: [Docker Deployment](DOCKER_DEPLOYMENT.md), [Portainer Deployment](PORTAINER_DEPLOYMENT.md), [Containerization](CONTAINERIZATION_SUMMARY.md)
 - **Volume/Clipping**: [Audio Levels Explained](AUDIO_LEVELS_EXPLAINED.md)
 - **Service Mode**: [Containerization](CONTAINERIZATION_SUMMARY.md), [Container Quick Start](CONTAINER_QUICKSTART.md)
 - **Interactive Mode**: [Quick Start](QUICKSTART.md), [User Manual](README.md)

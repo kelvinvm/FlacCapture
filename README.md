@@ -28,6 +28,14 @@ Place your M3U file at `FlacCapture\Assests\show.m3u` and follow the prompts.
 
 ### Docker (Service Mode)
 
+**Option 1: Using Portainer (Recommended for Synology)**
+```bash
+# Access Portainer web UI at http://your-nas-ip:9000
+# Deploy using the docker-compose.yml via Stacks
+# See docs/PORTAINER_DEPLOYMENT.md for detailed guide
+```
+
+**Option 2: Using Command Line**
 ```bash
 # Build and start container
 docker-compose up -d --build
@@ -39,7 +47,9 @@ docker logs -f flaccapture
 # Output FLAC files appear in output directory
 ```
 
-For Synology NAS deployment, see [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md).
+For detailed instructions:
+- **Web UI (Portainer)**: [Portainer Deployment Guide](docs/PORTAINER_DEPLOYMENT.md)
+- **Command Line**: [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md).
 
 ## Documentation
 
@@ -49,7 +59,8 @@ For Synology NAS deployment, see [Docker Deployment Guide](docs/DOCKER_DEPLOYMEN
 - ?? **[User Guide](docs/README.md)** - Complete feature documentation
 
 ### Deployment
-- ?? **[Docker Deployment](docs/DOCKER_DEPLOYMENT.md)** - Full Synology NAS setup guide
+- ?? **[Docker Deployment](docs/DOCKER_DEPLOYMENT.md)** - Command-line Synology NAS setup
+- ??? **[Portainer Deployment](docs/PORTAINER_DEPLOYMENT.md)** - Web UI Synology NAS setup
 - ?? **[Containerization Summary](docs/CONTAINERIZATION_SUMMARY.md)** - Architecture overview
 
 ### Technical Details
