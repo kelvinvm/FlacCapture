@@ -25,7 +25,7 @@ class DirectStreamCapture : IDisposable
     public async Task CaptureStreamToFile(string[] streamUrls, string outputFile, bool convertToFlac = false)
     {
         Console.WriteLine("Initializing direct stream capture (Linux mode)...");
-    Console.WriteLine($"Output file: {outputFile}\n");
+        Console.WriteLine($"Output file: {outputFile}\n");
 
         string tempCombinedWav = Path.Combine(Path.GetTempPath(), $"combined_{Guid.NewGuid()}.wav");
         
