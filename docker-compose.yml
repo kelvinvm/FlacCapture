@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  flaccapture:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flaccapture
+    restart: unless-stopped
+    
+    volumes:
+      # Map to your Synology NAS directories
+      - /volume1/audio/input:/app/input
+      - /volume1/audio/output:/app/output
+      - /volume1/audio/logs:/app/logs
+    
+    environment:
+      # Scan interval in seconds (how often to check for new M3U files)
+      - SCAN_INTERVAL_SECONDS=30
+      
+      # Playback monitoring volume (0.0 to 1.0) - doesn't affect capture quality
+      - PLAYBACK_VOLUME=0.7
+      
+      # Automatically delete WAV files after successful FLAC conversion
+      - AUTO_DELETE_WAV=true
+      
+      # Auto-convert to FLAC after capture
+      - AUTO_CONVERT_FLAC=true
+      
+      # FLAC quality (0-100, default 100)
+      - FLAC_QUALITY=100
+      
+      # Timezone (optional, adjust to your location)
+      - TZ=America/New_York
+    
+    # Use host network for audio capture (required for WASAPI on Windows)
+    # For Linux/NAS, we'll use a different approach
+    network_mode: "bridge"
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Networks
+networks:
+  default:
+    name: flaccapture_network
